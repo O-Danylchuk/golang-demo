@@ -1,5 +1,7 @@
 FROM golang:1.21-alpine AS build
 
+RUN apk add --no-cache postgresql-client
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
