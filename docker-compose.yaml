@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: xenovar       # User to create
+      POSTGRES_PASSWORD: xenovarpass  # User password
+      POSTGRES_DB: silly_demo_db    # Database to create
+    ports:
+      - "5432:5432"                 # Host port : Container port
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist data in Docker volume
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      DB_ENDPOINT: db               # Name of the db service
+      DB_PORT: 5432
+      DB_USER: xenovar              # Database user
+      DB_PASS: xenovarpass          # Database password
+      DB_NAME: silly_demo_db        # Database name
+    depends_on:
+      - db
+    volumes:
+      - .:/app                       # Bind mount for local development
+
+volumes:
+  postgres_data:

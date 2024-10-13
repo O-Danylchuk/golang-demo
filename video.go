@@ -127,6 +127,10 @@ func videoPostHandler(ctx *gin.Context) {
 	}
 	if strings.ToLower(os.Getenv("DB")) == "fs" {
 		videos, err := getVideosFromFile()
+		if err != nil {
+			httpErrorInternalServerError(err, ctx)
+			return
+		}
 		videos = append(videos, *video)
 		dir := os.Getenv("FS_DIR")
 		if len(dir) == 0 {
