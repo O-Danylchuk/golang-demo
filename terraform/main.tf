@@ -4,6 +4,9 @@ provider aws {
 
 resource aws_vpc silly_vpc {
   cidr_block = "10.0.0.0/16"
+
+  enable_dns_support   = true  # Enable DNS resolution
+  enable_dns_hostnames = true  # Enable DNS hostnames
 }
 
 # Internet Gateway
@@ -88,46 +91,21 @@ resource aws_security_group ec2_sg {
   }
 }
 
-resource aws_instance silly_demo_ec2 {
-  ami                         = "ami-0bcf98c2c6db6c5f4" 
-  instance_type               = "t3.micro"
-  subnet_id                   = aws_subnet.public_subnet_a.id
-  security_groups             = [aws_security_group.ec2_sg.id]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "silly-demo"
-  }
-
-  user_data = <<-EOF
-              yum update -y
-              yum install -y git nginx postgresql
-              amazon-linux-extras install nginx1 -y
-              systemctl enable nginx
-              systemctl start nginx
-
-              cat << 'EOL' > /etc/nginx/conf.d/silly-demo.conf
-              server {
-                  listen 80;
-                  server_name _;
-
-                  location / {
-                      proxy_pass http://localhost:3000;  # Update if necessary
-                      proxy_set_header Host $host;
-                      proxy_set_header X-Real-IP $remote_addr;
-                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                      proxy_set_header X-Forwarded-Proto $scheme;
-                  }
-              }
-              EOL
-              # Restart Nginx to apply the new configuration
-              systemctl restart nginx
-              EOF
+resource aws_db_subnet_group silly_demo_db_subnets {
+  name       = "silly-demo-db1-subnet-group"
+  subnet_ids = [aws_subnet.public_subnet_a.id, aws_subnet.public_subnet_b.id, aws_subnet.public_subnet_c.id]
 }
 
 # Security Group for RDS
 resource aws_security_group rds_sg {
   vpc_id = aws_vpc.silly_vpc.id
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks  = ["0.0.0.0/0"]
+  }
 
   ingress {
     from_port   = 5432
@@ -144,13 +122,8 @@ resource aws_security_group rds_sg {
   }
 }
 
-resource aws_db_subnet_group silly_demo_db_subnets {
-  name       = "silly-demo-db-subnet-group"
-  subnet_ids = [aws_subnet.public_subnet_a.id, aws_subnet.public_subnet_b.id, aws_subnet.public_subnet_c.id]
-}
-
 resource aws_db_instance silly_demo_rds {
-  identifier              = "silly-demo-db"
+  identifier              = "silly-demo-db-new"
   instance_class          = "db.t4g.micro"
   allocated_storage       = 20
   engine                  = "postgres"
@@ -162,5 +135,50 @@ resource aws_db_instance silly_demo_rds {
   db_subnet_group_name    = aws_db_subnet_group.silly_demo_db_subnets.name
   vpc_security_group_ids  = [aws_security_group.rds_sg.id]
   skip_final_snapshot     = true
-  publicly_accessible     = false
+  publicly_accessible     = true
+}
+
+resource aws_instance silly_demo_ec2 {
+  ami                         = "ami-0bcf98c2c6db6c5f4" 
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.public_subnet_a.id
+  security_groups             = [aws_security_group.ec2_sg.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "silly-demo"
+  }
+
+  user_data = <<-EOF
+
+              git clone https://github.com/shefeg/golang-demo.git /home/ec2-user/golang-demo
+              cd /home/ec2-user/golang-demo
+              go build -o silly-demo
+              DB_ENDPOINT=${aws_db_instance.silly_demo_rds.endpoint} DB_PORT=5432 DB_USER=<admin1> DB_PASS=<admin123> DB_NAME=<sillydemo> ./silly_demo &
+
+              yum update -y
+              yum install -y git nginx postgresql
+              amazon-linux-extras install nginx1 -y
+              systemctl enable nginx
+              systemctl start nginx
+
+              
+
+              cat << 'EOL' > /etc/nginx/conf.d/silly-demo.conf
+              server {
+                  listen 80;
+                  server_name localhost;
+
+                  location / {
+                      proxy_pass http://localhost:8080;  # Update if necessary
+                  }
+              }
+              EOL
+              # Restart Nginx to apply the new configuration
+              systemctl restart nginx
+              EOF
+}
+
+output "db_endpoint" {
+  value = aws_db_instance.silly_demo_rds.endpoint
 }

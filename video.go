@@ -25,17 +25,16 @@ func getDB(c *gin.Context) *pg.DB {
 	if dbSession != nil {
 		return dbSession
 	}
-	endpoint := os.Getenv("DB_ENDPOINT")
-	if len(endpoint) == 0 {
-		slog.Error("Environment variable `DB_ENDPOINT` is empty")
-		c.String(http.StatusBadRequest, "Environment variable `DB_ENDPOINT` is empty")
+
+	host := os.Getenv("DB_HOST")
+	if len(host) == 0 {
+		slog.Error("Environment variable `DB_HOST` is empty")
+		c.String(http.StatusBadRequest, "Environment variable `DB_HOST` is empty")
 		return nil
 	}
 	port := os.Getenv("DB_PORT")
 	if len(port) == 0 {
-		slog.Error("Environment variable `DB_PORT` is empty")
-		c.String(http.StatusBadRequest, "Environment variable `DB_PORT` is empty")
-		return nil
+		port = "5432"
 	}
 	user := os.Getenv("DB_USER")
 	if len(user) == 0 {
@@ -61,12 +60,25 @@ func getDB(c *gin.Context) *pg.DB {
 		c.String(http.StatusBadRequest, "Environment variable `DB_NAME` is empty")
 		return nil
 	}
+
+	endpoint := fmt.Sprintf("%s:%s", host, port)
+
 	dbSession := pg.Connect(&pg.Options{
-		Addr:     endpoint + ":" + port,
+		Addr:     endpoint,
 		User:     user,
 		Password: pass,
 		Database: name,
 	})
+
+	_, err := dbSession.Exec("SELECT 1")
+	if err != nil {
+		slog.Error("Failed to connect to the database", "error", err)
+		c.String(http.StatusInternalServerError, "Failed to connect to the database")
+		return nil
+	} else {
+		slog.Info("Connected to the database", "endpoint", endpoint, "user", user, "database", name)
+	}
+
 	return dbSession
 }
 
