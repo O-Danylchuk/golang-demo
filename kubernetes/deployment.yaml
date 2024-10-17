@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: firstdeployment
+  labels:
+    team: development
+spec:
+  replicas: 3
+  selector:                        # deployment selector
+    matchLabels:                   # deployment selects "app:frontend" pods, monitors and traces these pods 
+      app: frontend                # if one of the pod is killed, K8s looks at the desire state (replica:3), it recreats another pods to protect number of replicas
+  template:
+    metadata:
+      labels:                      # pod labels, if the deployment selector is same with these labels, deployment follows pods that have these labels         
+        app: frontend              # key: value        
+    spec:                                   
+      containers:
+      - name: nginx                
+        image: nginx:latest        # image download from DockerHub
+        ports:
+        - containerPort: 80        # open following ports
