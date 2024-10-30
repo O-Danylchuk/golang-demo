@@ -2,8 +2,9 @@ services:
   db:
     image: postgres:15
     container_name: silly-demo-db
+    network_mode: host
     environment:
-      POSTGRES_USER: admin
+      POSTGRES_USER: admin1
       POSTGRES_PASSWORD: admin123
       POSTGRES_DB: sillydemo
     ports:
@@ -14,6 +15,7 @@ services:
   silly-demo:
     build: .
     container_name: silly-demo-app
+    network_mode: host
     volumes:
       - .:/app # Bind mount the current directory for development
       - /app/tmp # Avoid volume caching issues
@@ -24,7 +26,7 @@ services:
       - PORT=8080
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=admin
+      - DB_USER=admin1
       - DB_PASSWORD=admin123
       - DB_NAME=sillydemo
     depends_on:
@@ -34,6 +36,7 @@ services:
   nginx:
     image: nginx:latest
     container_name: silly-demo-nginx
+    network_mode: host
     ports:
       - "80:80"
     volumes:
