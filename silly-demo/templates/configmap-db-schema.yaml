@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-schema
+data:
+  db_schema.sql: |
+    CREATE TABLE IF NOT EXISTS videos (
+        id VARCHAR(255) NOT NULL,
+        title VARCHAR(255) NOT NULL
+    );

@@ -1,0 +1,12 @@
+# silly-demo-chart/templates/service-nginx.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.nginx.service.name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.nginx.service.port }}
+      targetPort: {{ .Values.nginx.port }}
+  selector:
+    app: silly-demo-nginx

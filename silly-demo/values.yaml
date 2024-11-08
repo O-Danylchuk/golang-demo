@@ -1,0 +1,37 @@
+db:
+  image: postgres:15
+  containerName: silly-demo-db
+  port: 5432
+  env:
+    user: admin1
+    password: admin123
+    dbName: sillydemo
+  schemaFile: db_schema.sql
+  service:
+    name: silly-demo-db
+    port: 5432
+
+app:
+  image: odanylchuk/silly-demo-app:latest
+  containerName: silly-demo-app
+  port: 8080
+  env:
+    goEnv: development
+    dbHost: silly-demo-db
+    dbPort: 5432
+    dbUser: admin1
+    dbPassword: admin123
+    dbName: sillydemo
+  service:
+    name: silly-demo-app
+    port: 8080
+
+nginx:
+  image: nginx:latest
+  containerName: silly-demo-nginx
+  port: 80
+  configFile: nginx.conf
+  service:
+    name: silly-demo-nginx
+    port: 80
+

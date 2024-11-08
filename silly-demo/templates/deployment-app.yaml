@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.containerName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: silly-demo-app
+  template:
+    metadata:
+      labels:
+        app: silly-demo-app
+    spec:
+      containers:
+        - name: {{ .Values.app.containerName }}
+          image: {{ .Values.app.image }}
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          env:
+            - name: GO_ENV
+              value: {{ .Values.app.env.goEnv }}
+            - name: PORT
+              value: "{{ .Values.app.port }}"
+            - name: DB_HOST
+              value: {{ .Values.app.env.dbHost }}
+            - name: DB_PORT
+              value: "{{ .Values.app.env.dbPort }}"
+            - name: DB_USER
+              value: {{ .Values.app.env.dbUser }}
+            - name: DB_PASSWORD
+              value: {{ .Values.app.env.dbPassword }}
+            - name: DB_NAME
+              value: {{ .Values.app.env.dbName }}
+          volumeMounts:
+            - name: app-volume
+              mountPath: /app
+      volumes:
+        - name: app-volume
+          emptyDir: {}
